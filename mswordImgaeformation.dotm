@@ -1,0 +1,67 @@
+Sub FormatImagesInWord()
+    Dim doc As Document
+    Set doc = ActiveDocument
+    
+    Dim img As InlineShape
+    Dim shp As Shape ' Shape variable for rotation
+    Dim imgCount As Integer
+    Dim targetWidth As Single
+    Dim targetHeight As Single
+    
+    ' Set target width and height in points (1 inch = 72 points)
+    targetWidth = 5.77 * 72 ' Convert inches to points
+    targetHeight = 4.33 * 72 ' Convert inches to points
+    
+    imgCount = 0
+    
+    ' Loop through all inline shapes (images) in the document
+    For Each img In doc.InlineShapes
+        imgCount = imgCount + 1
+        
+        ' Add a new line before the first image on each page
+        If imgCount Mod 2 = 1 Then
+            doc.Paragraphs.Last.Range.Text = vbCrLf ' Adds a blank paragraph
+        End If
+        
+        ' Convert InlineShape to Shape for rotation
+        Set shp = img.ConvertToShape
+        
+        ' Check if the image is in portrait mode (height > width)
+        If shp.Height > shp.Width Then
+            ' Rotate the image to make it landscape (90 degrees)
+            shp.Rotation = 90
+            ' Swap target dimensions for rotated images
+            Dim temp As Single
+            temp = targetWidth
+            targetWidth = targetHeight
+            targetHeight = temp
+        End If
+        
+        ' Resize image to target width and height
+        shp.LockAspectRatio = msoFalse
+        shp.Width = targetWidth
+        shp.Height = targetHeight
+        
+        ' Convert back to InlineShape and center it
+        Set img = shp.ConvertToInlineShape
+        img.Range.ParagraphFormat.Alignment = wdAlignParagraphCenter
+        
+        ' Add a new line after the first image on each page
+        If imgCount Mod 2 = 1 Then
+            doc.Paragraphs.Last.Range.Text = vbCrLf ' Adds a blank paragraph
+            doc.Paragraphs.Add
+        End If
+        
+        ' If two images are processed, insert page break
+        If imgCount Mod 2 = 0 Then
+            doc.Paragraphs.Last.Range.InsertBreak Type:=wdPageBreak
+            doc.Paragraphs.Add
+        End If
+        
+        ' Reset target dimensions for the next image
+        targetWidth = 5.77 * 72
+        targetHeight = 4.33 * 72
+    Next img
+    
+    MsgBox "Images formatted and resized successfully!"
+End Sub
